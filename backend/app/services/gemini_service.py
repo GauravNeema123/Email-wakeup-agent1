@@ -1,29 +1,66 @@
 import requests
-import time
 from dotenv import load_dotenv
 import os
 
 load_dotenv()
 
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-GEMINI_URL = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key={GEMINI_API_KEY}"
+OPEN_ROUTER_API_KEY = os.getenv(
+    "OPEN_ROUTER_API_KEY"
+)
+
 
 class Model:
-    def generate_content(self, prompt, retries=3, delay=10):
-        payload = {
-            "contents": [{"parts": [{"text": prompt}]}]
-        }
-        for attempt in range(retries):
-            response = requests.post(GEMINI_URL, json=payload)
-            if response.status_code == 429:
-                print(f"Rate limited, waiting {delay}s... (attempt {attempt+1}/{retries})")
-                time.sleep(delay)
-                continue
-            response.raise_for_status()
-            data = response.json()
-            return type("Response", (), {
-                "text": data["candidates"][0]["content"]["parts"][0]["text"]
-            })()
-        raise Exception("Gemini API rate limit exceeded after retries")
+
+    def generate_content(self, prompt):
+
+        response = requests.post(
+
+            url="https://openrouter.ai/api/v1/chat/completions",
+
+            headers={
+
+                "Authorization":
+                f"Bearer {OPEN_ROUTER_API_KEY}",
+
+                "Content-Type":
+                "application/json",
+
+                "HTTP-Referer":
+                "http://localhost:3000",
+
+                "X-Title":
+                "Email Wakeup Agent"
+            },
+
+            json={
+
+                "model":
+                "openai/gpt-3.5-turbo",
+
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": prompt
+                    }
+                ]
+            }
+        )
+
+        print(response.status_code)
+        print(response.text)
+
+        response.raise_for_status()
+
+        data = response.json()
+
+        return type(
+            "Response",
+            (),
+            {
+                "text":
+                data["choices"][0]["message"]["content"]
+            }
+        )()
+
 
 model = Model()
